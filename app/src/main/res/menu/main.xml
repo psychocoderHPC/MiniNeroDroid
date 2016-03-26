@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/action_settings"
+        android:orderInCategory="100"
+        android:title="@string/action_settings"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_addresses"
+        android:orderInCategory="100"
+        android:title="Address Book"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_account"
+        android:orderInCategory="100"
+        android:title="Transactions"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_my_addr"
+        android:orderInCategory="100"
+        android:title="Receiving Address"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_balance"
+        android:orderInCategory="100"
+        android:title="Balance"
+        app:showAsAction="never" />
+
+</menu>
