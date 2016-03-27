@@ -18,6 +18,7 @@ import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
 import android.preference.RingtonePreference;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.MenuItem;
 import android.support.v4.app.NavUtils;
 
@@ -78,9 +79,37 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
                     }
                 }
 
+            } else if (preference.getKey().contains("api_key")) {
+                //instead, have to store encrypted..
+                if (stringValue.length() == 128) {
+                    String password = "testPassword";
+                    ApiKeyStorage aks = new ApiKeyStorage(preference.getContext(), password);
+                    Log.d("asdf", "preference api key value bleh " + stringValue);
+                    aks.storeApiKey(stringValue);
+                    preference.setSummary("(stored encrypted)");
+                    Log.d("asdf", "encrypted key:" + TweetNaclFast.hexEncodeToString(aks.getApiKey()));
+                } else {
+                    Log.d("asdf", "wrong key lenght");
+                    preference.setSummary("wrong key length (must be 128 hex chars)");
+                    //show toast "wrong key length"
+                }
+            } else if (preference.getKey().contains("example_switch")) {
+                //clear api_key if off..
+                    Log.d("asdf", "boolean switch now:"+stringValue);
+                    if (stringValue.contains("ff")) {
+                        String password = "testPassword";
+                        ApiKeyStorage aks = new ApiKeyStorage(preference.getContext(), password);
+                        Log.d("asdf", "preference api key value bleh " + stringValue);
+                        aks.storeApiKey("none");
+                                        preference.setSummary(stringValue);
+                    } else {
+                        //probably need to save that..
+                                        preference.setSummary(stringValue);
+                    }
             } else {
                 // For all other preferences, set the summary to the value's
                 // simple string representation.
+                Log.d("asdf", "preference api key value"+preference.getKey());
                 preference.setSummary(stringValue);
             }
             return true;
@@ -108,13 +137,12 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
     private static void bindPreferenceSummaryToValue(Preference preference) {
         // Set the listener to watch for value changes.
         preference.setOnPreferenceChangeListener(sBindPreferenceSummaryToValueListener);
-
-        // Trigger the listener immediately with the preference's
-        // current value.
-        sBindPreferenceSummaryToValueListener.onPreferenceChange(preference,
-                PreferenceManager
-                        .getDefaultSharedPreferences(preference.getContext())
-                        .getString(preference.getKey(), ""));
+            // Trigger the listener immediately with the preference's
+            // current value.
+            sBindPreferenceSummaryToValueListener.onPreferenceChange(preference,
+                    PreferenceManager
+                            .getDefaultSharedPreferences(preference.getContext())
+                            .getString(preference.getKey(), ""));
     }
 
     @Override
@@ -191,7 +219,11 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             // updated to reflect the new value, per the Android Design
             // guidelines.
             bindPreferenceSummaryToValue(findPreference("mininodo_ip"));
-            //bindPreferenceSummaryToValue(findPreference("api_key"));
+
+            bindPreferenceSummaryToValue(findPreference("api_key"));
+            //obviously don't put the summary there..
+
+
         }
 
         @Override

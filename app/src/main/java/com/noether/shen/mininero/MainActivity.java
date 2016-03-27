@@ -397,13 +397,14 @@ public class MainActivity extends AppCompatActivity
 
 
     public String GenerateSignature(String message) {
-        //obviously this is a dummy sk just here for testing
-        String sk = "167e5760ac648c09fc965d9f42104c1838e82a0e51ba939032e628b0af2e0a01";
-        sk = "abaa0ebb990938a509251f1e75ce69aa0721c8969c577698fc9ea405a8a9bba87ea2d03244b32fb47eca62c02fe89ec6b4c71585a69ae56181e7ab2e3d75feef";
+
+        //obviously prompt for this later, or maybe include the prompt as part of the class?
+        String password = "testPassword";
+        ApiKeyStorage aks = new ApiKeyStorage(getApplicationContext(), password);
 
         String rv = "";
         //Signature.KeyPair skpk = Signature.keyPair_fromSeed(TweetNaclFast.hexDecode(sk)); //use if 32 byte
-        Signature.KeyPair skpk = Signature.keyPair_fromSecretKey(TweetNaclFast.hexDecode(sk)); //use if 64 byte
+        Signature.KeyPair skpk = Signature.keyPair_fromSecretKey(aks.getApiKey()); //use if 64 byte
         byte[] messageBytes = message.getBytes(StandardCharsets.UTF_8);
 
         TweetNaclFast.Signature Ed25519 = new TweetNaclFast.Signature(skpk.getPublicKey(), skpk.getSecretKey());
