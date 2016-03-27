@@ -27,6 +27,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
+import android.widget.ListView;
 import android.widget.Toast;
 
 
@@ -232,6 +233,9 @@ public class MainActivity extends AppCompatActivity
             String fileName = "SavedAddresses.db";
             //String filePath = "/storage/sdcard0/" + Environment.DIRECTORY_DOCUMENTS + File.separator + fileName;
             sql = this.openOrCreateDatabase(fileName, MODE_PRIVATE, null );
+            sql.execSQL(
+                    "CREATE TABLE SavedAddress(Id INTEGER PRIMARY KEY AUTOINCREMENT, Name String, address String)"
+            );
         } catch (Exception dberr) {
             Log.d("asdf", "unknown db error");
             showToast("unknown android sqlite error - unable to store or load addresses locally");
@@ -243,18 +247,21 @@ public class MainActivity extends AppCompatActivity
         String selectQuery = "SELECT  * FROM SavedAddress";
         try {
             Cursor cursor = sql.rawQuery(selectQuery, null);
+            Log.d("asdf", "after rawquery");
             if (cursor.moveToFirst()) {
                 Log.d("asdf", "got move to first");
                 do {
                     SavedAddress sa = new SavedAddress();
                     sa.Id = Integer.parseInt(cursor.getString(0));
-                    sa.address = cursor.getString(1);
-                    sa.Name = cursor.getString(2);
+                    sa.address = cursor.getString(2);
+                    sa.Name = cursor.getString(1);
                     addressList.add(sa);
                 } while (cursor.moveToNext());
+                Log.d("asdf","loaded db!");
             } else {
                 //preinitialize with creator address + monero dev address if it's empty
                 //user can delete these if they want..
+                showToast("failed to load db! recreating...");
                 SavedAddress me = new SavedAddress();
                 me.Id = 0;
                 me.Name = "shen";
@@ -265,20 +272,26 @@ public class MainActivity extends AppCompatActivity
                 xmr.address = "44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A";
                 addressList.add(me);
                 addressList.add(xmr);
+                insertAddress(me);
+                insertAddress(xmr);
             }
         } catch (Exception dberr) {
-                 //preinitialize with creator address + monero dev address if it's empty
-                //user can delete these if they want..
-                SavedAddress me = new SavedAddress();
-                me.Id = 0;
-                me.Name = "shen";
-                me.address = "4AjCAP7WoojjdydwkgvEyxRfxHNLhxbBz4FeLug5gW4WLJ13VnhXtrW7uk5fcLKUarTVpJtcWxRheUd7etWG9c8VHwA8gFC";
-                SavedAddress xmr = new SavedAddress();
-                xmr.Id = 1;
-                xmr.Name = "xmr dev donate";
-                xmr.address = "44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A";
-                addressList.add(me);
-                addressList.add(xmr);
+             //preinitialize with creator address + monero dev address if it's empty
+            //user can delete these if they want..
+            showToast("Failed to load db! recreating...");
+            SavedAddress me = new SavedAddress();
+            me.Id = 0;
+            me.Name = "shen";
+            me.address = "4AjCAP7WoojjdydwkgvEyxRfxHNLhxbBz4FeLug5gW4WLJ13VnhXtrW7uk5fcLKUarTVpJtcWxRheUd7etWG9c8VHwA8gFC";
+            SavedAddress xmr = new SavedAddress();
+            xmr.Id = 1;
+            xmr.Name = "xmr dev donate";
+            xmr.address = "44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A";
+            addressList.add(me);
+            addressList.add(xmr);
+            insertAddress(me);
+            insertAddress(xmr);
+
         }
         return addressList;
     }
@@ -286,24 +299,53 @@ public class MainActivity extends AppCompatActivity
     public void loadAddress() {
         AlertDialog.Builder b = new AlertDialog.Builder(this);
         b.setTitle("Load Address");
+
         final List<SavedAddress> sa = getAddresses();
         String[] names = new String[sa.size()];
+
         for (int i = 0; i < sa.size(); i++) {
             names[i] = sa.get(i).Name;
         }
-        b.setItems(names, new DialogInterface.OnClickListener() {
+        b.setCancelable(true);
 
+        b.setSingleChoiceItems(names, 0, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
+                //dialog.dismiss();
+                //String dest = sa.get(which).address;
+                //EditText desttext = (EditText) findViewById(R.id.destination_text);
+                //desttext.setText(dest);
+            }
+
+        });
+        b.setPositiveButton("Load", new DialogInterface.OnClickListener() {
+            //load on tap
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                ListView lw = ((AlertDialog)dialog).getListView();
+                which = lw.getCheckedItemPosition();
 
                 dialog.dismiss();
                 String dest = sa.get(which).address;
                 EditText desttext = (EditText) findViewById(R.id.destination_text);
                 desttext.setText(dest);
             }
-
+        });
+        b.setNegativeButton("Delete", new DialogInterface.OnClickListener() {
+            //load on tap
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                ListView lw = ((AlertDialog)dialog).getListView();
+                which = lw.getCheckedItemPosition();
+                dialog.dismiss();
+                deleteAddress(sa.get(which));
+            }
         });
         b.show();
+    }
+
+    public boolean deleteAddress(SavedAddress sa) {
+        return sql.delete("SavedAddress", "Id="+sa.Id,null ) > 0;
     }
 
     public void onScanClick(View view) {
@@ -480,16 +522,16 @@ public class MainActivity extends AppCompatActivity
 
         public void JsonRequestGetAddress() throws Exception {
         final SharedPreferences SP = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
-        String mnip = SP.getString("mininodo_ip", "http://localhost:8080");
+            String mnip = SP.getString("mininodo_ip", "http://localhost:8080");
         Long offsetCB = SP.getLong("offsetCB", now());
         Log.d("asdf", "requesting:"+mnip);
         MiniNodoClient mnc = new MiniNodoClient(mnip);
 
         String timestamp = Long.toString(now() + offsetCB);
         String message = "address" + timestamp;
-        Log.d("asdf", "message to sign is:"+message);
+            Log.d("asdf", "message to sign is:" + message);
         String signature = GenerateSignature(message);
-        Log.d("asdf", "signature is:"+signature);
+            Log.d("asdf", "signature is:" + signature);
 
         RequestParams params = new RequestParams();
         params.put("timestamp", timestamp);
@@ -617,7 +659,11 @@ public class MainActivity extends AppCompatActivity
         ContentValues data = new ContentValues();
         data.put("Name", sa.Name);
         data.put("address", sa.address);
-        sql.insert( "SavedAddress",null, data);
+        try {
+            sql.insert("SavedAddress", null, data);
+        } catch (Exception excIns) {
+            Log.d("asdf", "couldn't insert!");
+        }
     }
 
     public void saveButtonClick(View view) {
