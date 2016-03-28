@@ -62,6 +62,7 @@ public class MainActivity extends AppCompatActivity
 
     SQLiteDatabase sql;
     Cursor c;
+    JsonRequester jreq;
 
     private void showToast(String message) {
         Toast toast = Toast.makeText(this, message, Toast.LENGTH_LONG);
@@ -76,6 +77,7 @@ public class MainActivity extends AppCompatActivity
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        jreq = new JsonRequester(getApplicationContext());
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -140,8 +142,10 @@ public class MainActivity extends AppCompatActivity
             Context context = getApplicationContext();
             if (isNetworkConnected()) {
                 try {
-                    JsonRequestGetTime(); //this will be moved to app launch later, so the offset is preloaded
-                    JsonRequestGetBalance();
+                    jreq.GetTime();
+                    jreq.GetBalance();
+                    //JsonRequestGetTime(); //this will be moved to app launch later, so the offset is preloaded
+                    //JsonRequestGetBalance();
                 } catch (Exception e) {
                     Log.d("asdf", "is your server running");
                     int duration = Toast.LENGTH_SHORT;
@@ -156,7 +160,10 @@ public class MainActivity extends AppCompatActivity
                 }
         if (id == R.id.action_my_addr) {
             try {
-                JsonRequestGetAddress();
+                jreq.GetTime();
+                jreq.GetAddress();
+                //JsonRequestGetAddress();
+
             } catch (Exception addrexc) {
                 Log.d("asdf","error in getaddress");
             }
@@ -194,8 +201,8 @@ public class MainActivity extends AppCompatActivity
             Context context = getApplicationContext();
             if (isNetworkConnected()) {
                 try {
-                    JsonRequestGetTime(); //this will be moved to app launch later, so the offset is preloaded
-                    JsonRequestGetBalance();
+                    jreq.GetTime(); //this will be moved to app launch later, so the offset is preloaded
+                    jreq.GetBalance();
                 } catch (Exception e) {
                     Log.d("asdf", "is your server running");
                     int duration = Toast.LENGTH_SHORT;
@@ -210,7 +217,8 @@ public class MainActivity extends AppCompatActivity
                 }
         if (id == R.id.nav_my_addr) {
             try {
-                JsonRequestGetAddress();
+                jreq.GetTime();
+                jreq.GetAddress();
             } catch (Exception errr){
                 Log.d("asdf","didn't get address");
             }
@@ -380,271 +388,6 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-
-    /*
-   *  Json requesting from mininodo stuff
-   *
-     */
-
-    public long now() {
-        return (long) (System.currentTimeMillis() / 1000);
-        //return Convert.ToInt64(DateTime.Now.Subtract(new DateTime(1970, 1, 1)).TotalSeconds);
-    }
-
-    public long computeBackwardsOffset(String timestamp) {
-        long last = Long.parseLong(timestamp);   // Convert.ToInt64(timestamp);
-        long offset = last - now();
-        return offset;
-    }
-
-    //attempted rewrite using mininodo client
-   public void JsonRequestGetTime() throws Exception {
-       final SharedPreferences SP = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
-       String mnip = SP.getString("mininodo_ip", "http://localhost:8080");
-       Log.d("asdf", "requesting:"+mnip);
-       MiniNodoClient mnc = new MiniNodoClient(mnip);
-
-       //use this handler if it's just a string, not a json..
-       mnc.get("/api/mininero", null, new AsyncHttpResponseHandler() {
-
-           @Override
-           public void onSuccess(int statusCode, Header[] headers, byte[] response) {
-               // called when response HTTP status is "200 OK"
-               Log.d("asdf", "time2success");
-               try {
-                   String t2 = new String(response, "UTF-8");
-                   Log.d("asdf", "response is:"+t2);
-                   SharedPreferences.Editor editor = SP.edit();
-                   editor.putLong("offsetCB", computeBackwardsOffset(t2) );
-                   Log.d("asdf", "computed offset as:"+Long.toString(computeBackwardsOffset(t2)));
-                   editor.commit();
-                   /*
-                   Int64 cb_time = Convert.ToInt64(s.ToString());
-                   offsetCB = cb_time - Convert.ToInt64(DateTime.Now.Subtract(new DateTime(1970, 1, 1)).TotalSeconds);
-                   System.Diagnostics.Debug.WriteLine("computed offest as..:" + offsetCB.ToString());
-                   Windows.Storage.ApplicationData.Current.LocalSettings.Values["offset"] = offsetCB;
-                   */
-               } catch (UnsupportedEncodingException ue) {
-                   Log.d("asdf", "bad encoding");
-               }
-           }
-
-           @Override
-           public void onFailure(int statusCode, Header[] headers, byte[] errorResponse, Throwable e) {
-               // called when response HTTP status is "4XX" (eg. 401, 403, 404)
-               Log.d("asdf", "time2failure");
-           }
-       });
-   }
-
-
-    public String GenerateSignature(String message) {
-
-        //obviously prompt for this later, or maybe include the prompt as part of the class?
-        String password = "testPassword";
-        ApiKeyStorage aks = new ApiKeyStorage(getApplicationContext(), password);
-
-        String rv = "";
-        //Signature.KeyPair skpk = Signature.keyPair_fromSeed(TweetNaclFast.hexDecode(sk)); //use if 32 byte
-        Signature.KeyPair skpk = Signature.keyPair_fromSecretKey(aks.getApiKey()); //use if 64 byte
-        byte[] messageBytes = message.getBytes(StandardCharsets.UTF_8);
-
-        TweetNaclFast.Signature Ed25519 = new TweetNaclFast.Signature(skpk.getPublicKey(), skpk.getSecretKey());
-        try {
-            byte[] sigBytes = Ed25519.sign(messageBytes);
-            rv = TweetNaclFast.hexEncodeToString(sigBytes).substring(0, 128);
-            Log.d("asdf", rv);
-            //Log.d("asdf", "sig length:" + Integer.toString(rv.length()));
-        } catch (Exception ee) {
-            Log.d("asdf","signing error");
-        }
-        return rv;
-    }
-
-    public void JsonRequestGetBalance() throws Exception {
-        final SharedPreferences SP = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
-        String mnip = SP.getString("mininodo_ip", "http://localhost:8080");
-        Long offsetCB = SP.getLong("offsetCB", now());
-        Log.d("asdf", "requesting:"+mnip);
-        MiniNodoClient mnc = new MiniNodoClient(mnip);
-
-        String timestamp = Long.toString(now() + offsetCB);
-        String message = "balance" + timestamp;
-        Log.d("asdf", "message to sign is:"+message);
-        String signature = GenerateSignature(message);
-        Log.d("asdf", "signature is:"+signature);
-
-        RequestParams params = new RequestParams();
-        params.put("timestamp", timestamp);
-        params.put("Type", "balance");
-        params.put("signature", signature);
-
-
-        mnc.post("/api/mininero/", params, new JsonHttpResponseHandler() {
-            @Override
-            public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
-                // If the response is JSONObject instead of expected JSONArray
-                Log.d("asdf", "success1");
-            }
-
-            @Override
-            public void onSuccess(int statusCode, Header[] headers, JSONArray timeline) {
-                // Pull out the first event on the public timeline
-                Log.d("asdf", "success2");
-            }
-
-            @Override
-            public void onSuccess(int statusCode, Header[] headers, String balanceString) {
-                // Pull out the first event on the public timeline
-                Log.d("asdf", "success2");
-                Log.d("asdf", "balance is:"+balanceString);
-                Context context = getApplicationContext();
-                int duration = Toast.LENGTH_SHORT;
-                Toast toast = Toast.makeText(context, balanceString, duration);
-                toast.show();
-            }
-
-            @Override
-            public void onFailure(int statusCode, Header[] headers, String errorResponse, Throwable eee) {
-                Log.d("asdf", "error in get balance:" + errorResponse);
-                if (errorResponse.contains("balance")) {
-                    //actually not an error...
-                     Context context = getApplicationContext();
-                    int duration = Toast.LENGTH_SHORT;
-                    Toast toast = Toast.makeText(context, errorResponse, duration);
-                    toast.show();
-                }
-            }
-
-        });
-
-    }
-
-        public void JsonRequestGetAddress() throws Exception {
-        final SharedPreferences SP = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
-            String mnip = SP.getString("mininodo_ip", "http://localhost:8080");
-        Long offsetCB = SP.getLong("offsetCB", now());
-        Log.d("asdf", "requesting:"+mnip);
-        MiniNodoClient mnc = new MiniNodoClient(mnip);
-
-        String timestamp = Long.toString(now() + offsetCB);
-        String message = "address" + timestamp;
-            Log.d("asdf", "message to sign is:" + message);
-        String signature = GenerateSignature(message);
-            Log.d("asdf", "signature is:" + signature);
-
-        RequestParams params = new RequestParams();
-        params.put("timestamp", timestamp);
-        params.put("Type", "address");
-        params.put("signature", signature);
-
-
-        mnc.post("/api/mininero/", params, new JsonHttpResponseHandler() {
-            @Override
-            public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
-                // If the response is JSONObject instead of expected JSONArray
-                Log.d("asdf", "success1");
-            }
-
-            @Override
-            public void onSuccess(int statusCode, Header[] headers, JSONArray timeline) {
-                // Pull out the first event on the public timeline
-                Log.d("asdf", "success2");
-            }
-
-            @Override
-            public void onSuccess(int statusCode, Header[] headers, String balanceString) {
-                // Pull out the first event on the public timeline
-                Log.d("asdf", "success2");
-                Log.d("asdf", "your address is:"+balanceString);
-                Context context = getApplicationContext();
-                int duration = Toast.LENGTH_SHORT;
-                Toast toast = Toast.makeText(context, balanceString, duration);
-                toast.show();
-            }
-
-            @Override
-            public void onFailure(int statusCode, Header[] headers, String errorResponse, Throwable eee) {
-                Log.d("asdf", "it may not be an error (should return dummy address on success on the test server:" + errorResponse);
-                if (errorResponse.contains("address")) {
-                    //actually not an error...
-                     Context context = getApplicationContext();
-                    int duration = Toast.LENGTH_SHORT;
-                    Toast toast = Toast.makeText(context, errorResponse, duration);
-                    toast.show();
-                }
-            }
-
-        });
-
-    }
-
-    //needs work..
-    public void JsonRequestSend() throws Exception {
-        final SharedPreferences SP = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
-        String mnip = SP.getString("mininodo_ip", "http://localhost:8080");
-        Long offsetCB = SP.getLong("offsetCB", now());
-        Log.d("asdf", "requesting:"+mnip);
-        MiniNodoClient mnc = new MiniNodoClient(mnip);
-
-        String amount = "0d1";
-        String destination = "44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A";
-        //obviously change this later
-
-        String timestamp = Long.toString(now() + offsetCB);
-        String message = "send" + amount + timestamp + destination;
-        Log.d("asdf", "message to sign is:"+message);
-        String signature = GenerateSignature(message);
-        Log.d("asdf", "signature is:"+signature);
-
-        RequestParams params = new RequestParams();
-        params.put("timestamp", timestamp);
-        params.put("amount", amount);
-        params.put("Type", "send");
-        params.put("destination", destination);
-        params.put("signature", signature);
-
-
-        mnc.post("/api/mininero/", params, new JsonHttpResponseHandler() {
-            @Override
-            public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
-                // If the response is JSONObject instead of expected JSONArray
-                Log.d("asdf", "success1");
-            }
-
-            @Override
-            public void onSuccess(int statusCode, Header[] headers, JSONArray timeline) {
-                // Pull out the first event on the public timeline
-                Log.d("asdf", "success2");
-            }
-
-            @Override
-            public void onSuccess(int statusCode, Header[] headers, String balanceString) {
-                // Pull out the first event on the public timeline
-                Log.d("asdf", "success2");
-                Log.d("asdf", "your address is:"+balanceString);
-                Context context = getApplicationContext();
-                int duration = Toast.LENGTH_SHORT;
-                Toast toast = Toast.makeText(context, balanceString, duration);
-                toast.show();
-            }
-
-            @Override
-            public void onFailure(int statusCode, Header[] headers, String errorResponse, Throwable eee) {
-                Log.d("asdf", "it may not be an error (should return dummy address on success on the test server:" + errorResponse);
-                if (errorResponse.contains("xmr")) {
-                    //actually not an error...
-                     Context context = getApplicationContext();
-                    int duration = Toast.LENGTH_SHORT;
-                    Toast toast = Toast.makeText(context, errorResponse, duration);
-                    toast.show();
-                }
-            }
-
-        });
-
-    }
-
     public boolean isNetworkConnected() {
         ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         return cm.getActiveNetworkInfo() != null;
@@ -698,11 +441,23 @@ public class MainActivity extends AppCompatActivity
 
     public void sendButtonClick(View view) {
         //needs to parse whether it's an xmr address or bitcoin first
-
-        //this is currently non-functional, but close enough it can be easily made so..
         try {
-            JsonRequestSend();
+            jreq.GetTime();
+            EditText desttext = (EditText) findViewById(R.id.destination_text);
+            EditText amtext = (EditText) findViewById(R.id.amount_text);
+            EditText pidtext = (EditText) findViewById(R.id.pid_text);
+            String dest = desttext.getText().toString();
+            String amount = amtext.getText().toString();
+            amtext.setText(""); //set amount to zero, so don't accidentally resend..
+            String pid = pidtext.getText().toString();
+            if (dest.length() < 40) {
+                jreq.SendBtc(dest, amount);
+            } else {
+                jreq.SendXMR(dest, pid, amount);
+
+            }
         } catch (Exception sendEx) {
+            showToast("error in sending!");
             Log.d("asdf", "problem in send");
         }
     }
