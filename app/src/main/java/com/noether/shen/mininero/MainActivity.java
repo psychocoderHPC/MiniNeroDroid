@@ -114,7 +114,7 @@ public class MainActivity extends AppCompatActivity
             btcXmrUriParser btcXmrUri = new btcXmrUriParser(openUri.toString());
             desttext.setText(btcXmrUri.dest);
             pidtext.setText(btcXmrUri.pid);
-            amtext.setText(Double.toString(btcXmrUri.amount));
+            amtext.setText(btcXmrUri.amount);
         } catch (Exception noUriException) {
             Log.d("asdf", "no uri passed");
         }
@@ -393,18 +393,23 @@ public class MainActivity extends AppCompatActivity
             IntentResult scanResult = IntentIntegrator.parseActivityResult(requestCode, resultCode, intent);
             if (scanResult != null) {
                 // handle scan result as in mn uwp app...
-                String dest = scanResult.getContents().toString();
-                Context context = getApplicationContext();
-                int duration = Toast.LENGTH_SHORT;
-                Toast toast = Toast.makeText(context, dest, duration);
-                toast.show();
                 EditText desttext = (EditText) findViewById(R.id.destination_text);
-                desttext.setText(dest);
+                EditText pidtext = (EditText) findViewById(R.id.pid_text);
+                EditText amtext = (EditText) findViewById(R.id.amount_text);
+                String openUri = scanResult.getContents().toString();
+
+                btcXmrUriParser btcXmrUri = new btcXmrUriParser(openUri.toString());
+                desttext.setText(btcXmrUri.dest);
+                pidtext.setText(btcXmrUri.pid);
+                amtext.setText(btcXmrUri.amount);
+                Log.d("asdf", "amount in scan:"+btcXmrUri.amount);
+
+
+                Context context = getApplicationContext();
+                showToast("found address:"+openUri.toString());
+
             } else {
-                //Context context = getApplicationContext();
-                //int duration = Toast.LENGTH_SHORT;
-                //Toast toast = Toast.makeText(context, "No valid address found", duration);
-                //toast.show();
+                showToast("bad uri!");
             }
             // else continue with any other code you need in the method
         } catch (Exception e) {
