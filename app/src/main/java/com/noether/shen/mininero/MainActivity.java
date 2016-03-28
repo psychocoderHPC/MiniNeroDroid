@@ -179,7 +179,8 @@ public class MainActivity extends AppCompatActivity
         if (id == R.id.action_my_addr) {
             try {
                 jreq.GetTime();
-                jreq.GetAddress();
+                EditText desttext = (EditText) findViewById(R.id.destination_text);
+                jreq.GetAddress(desttext);
                 //JsonRequestGetAddress();
 
             } catch (Exception addrexc) {
@@ -239,7 +240,8 @@ public class MainActivity extends AppCompatActivity
         if (id == R.id.nav_my_addr) {
             try {
                 jreq.GetTime();
-                jreq.GetAddress();
+                EditText desttext = (EditText) findViewById(R.id.destination_text);
+                jreq.GetAddress(desttext);
             } catch (Exception errr){
                 Log.d("asdf","didn't get address");
             }

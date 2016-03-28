@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.webkit.WebView;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import com.loopj.android.http.AsyncHttpResponseHandler;
@@ -149,19 +150,17 @@ public class JsonRequester {
             @Override
             public void onFailure(int statusCode, Header[] headers, String errorResponse, Throwable eee) {
                 Log.d("asdf", "error in get balance:" + errorResponse);
-                if (errorResponse.contains("balance")) {
                     //actually not an error...
                     int duration = Toast.LENGTH_SHORT;
                     Toast toast = Toast.makeText(JContext, errorResponse, duration);
                     toast.show();
-                }
             }
 
         });
 
     }
 
-        public void GetAddress() throws Exception {
+    public void GetAddress(final EditText et) throws Exception {
         final SharedPreferences SP = PreferenceManager.getDefaultSharedPreferences(JContext);
             String mnip = SP.getString("mininodo_ip", "http://localhost:8080");
         Long offsetCB = SP.getLong("offsetCB", now());
@@ -201,17 +200,17 @@ public class JsonRequester {
                 int duration = Toast.LENGTH_SHORT;
                 Toast toast = Toast.makeText(JContext, balanceString, duration);
                 toast.show();
+                et.setText(balanceString);
             }
 
             @Override
             public void onFailure(int statusCode, Header[] headers, String errorResponse, Throwable eee) {
                 Log.d("asdf", "it may not be an error (should return dummy address on success on the test server:" + errorResponse);
-                if (errorResponse.contains("address")) {
-                    //actually not an error...
-                    int duration = Toast.LENGTH_SHORT;
-                    Toast toast = Toast.makeText(JContext, errorResponse, duration);
-                    toast.show();
-                }
+                //actually not an error...
+                int duration = Toast.LENGTH_SHORT;
+                Toast toast = Toast.makeText(JContext, errorResponse, duration);
+                toast.show();
+                et.setText(errorResponse);
             }
 
         });
