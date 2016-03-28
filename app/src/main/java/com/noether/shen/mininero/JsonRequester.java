@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import android.util.Log;
+import android.webkit.WebView;
 import android.widget.Toast;
 
 import com.loopj.android.http.AsyncHttpResponseHandler;
@@ -47,7 +48,7 @@ public class JsonRequester {
        Log.d("asdf", "requesting:" + mnip);
        MiniNodoClient mnc = new MiniNodoClient(mnip);
 
-       //use this handler if it's just a string, not a json..
+       //use this handler if it's just a String, not a json..
        mnc.get("/api/mininero", null, new AsyncHttpResponseHandler() {
 
            @Override
@@ -64,7 +65,7 @@ public class JsonRequester {
                    /*
                    Int64 cb_time = Convert.ToInt64(s.ToString());
                    offsetCB = cb_time - Convert.ToInt64(DateTime.Now.Subtract(new DateTime(1970, 1, 1)).TotalSeconds);
-                   System.Diagnostics.Debug.WriteLine("computed offest as..:" + offsetCB.ToString());
+                   System.Diagnostics.Log.d("computed offest as..:" + offsetCB.ToString());
                    Windows.Storage.ApplicationData.Current.LocalSettings.Values["offset"] = offsetCB;
                    */
                } catch (UnsupportedEncodingException ue) {
@@ -329,6 +330,50 @@ public class JsonRequester {
                     int duration = Toast.LENGTH_SHORT;
                     Toast toast = Toast.makeText(JContext, errorResponse, duration);
                     toast.show();
+            }
+        });
+    }
+
+    public void GetTxns(final android.webkit.WebView wv)
+    {
+        Log.d("asdf","trying to get txn's");
+        final SharedPreferences SP = PreferenceManager.getDefaultSharedPreferences(JContext);
+        String mnip = SP.getString("mininodo_ip", "http://localhost:8080");
+        Long offsetCB = SP.getLong("offsetCB", now());
+        Log.d("asdf", "requesting:"+mnip);
+        MiniNodoClient mnc = new MiniNodoClient(mnip);
+        String timestamp = Long.toString(now() + offsetCB);
+        String message = "mininerotxnwebview" + timestamp;
+        String signature = GenerateSignature(message);
+        RequestParams params = new RequestParams();
+        params.put("timestamp", timestamp);
+        params.put("signature", signature);
+
+        mnc.post("/web/mininero/", params, new JsonHttpResponseHandler() {
+            public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+                // If the response is JSONObject instead of expected JSONArray
+                Log.d("asdf", "success1");
+            }
+
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, JSONArray timeline) {
+                // Pull out the first event on the public timeline
+                Log.d("asdf", "success2");
+            }
+
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, String result) {
+                // Pull out the first event on the public timeline
+                Log.d("asdf", "success2");
+                //Log.d("asdf", "your address is:" + balanceString);
+                wv.loadData(result, "text/html", "UTF-8");
+            }
+
+            @Override
+            public void onFailure(int statusCode, Header[] headers, String errorResponse, Throwable eee) {
+                Log.d("asdf", "it may not be an error (should return dummy address on success on the test server:" + errorResponse);
+                //actually not an error...
+                wv.loadData(errorResponse, "text/html", "UTF-8");
             }
         });
     }

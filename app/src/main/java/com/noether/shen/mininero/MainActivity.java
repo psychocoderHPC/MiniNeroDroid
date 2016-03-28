@@ -172,6 +172,9 @@ public class MainActivity extends AppCompatActivity
             //JsonRequestGetTransactions
             //display in webview
             //need to add decryption here also..
+            Intent transactionsIntent = new Intent(this, TxnActivity.class);
+            startActivity(transactionsIntent);
+            return true;
         }
 
         return super.onOptionsItemSelected(item);
@@ -227,6 +230,9 @@ public class MainActivity extends AppCompatActivity
             //JsonRequestGetTransactions
             //display in webview
             //need to add decryption here also..
+            Intent transactionsIntent = new Intent(this, TxnActivity.class);
+            startActivity(transactionsIntent);
+            return true;
         }
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
