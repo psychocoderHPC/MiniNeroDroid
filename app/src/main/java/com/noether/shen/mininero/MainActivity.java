@@ -9,6 +9,7 @@ import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.ConnectivityManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.preference.PreferenceManager;
@@ -98,8 +99,25 @@ public class MainActivity extends AppCompatActivity
         navigationView.setNavigationItemSelectedListener(this);
 
 
+
         //attempt to load address book..
         loadDB();
+
+        //Attempt to load uri if it was passed:
+        EditText desttext = (EditText) findViewById(R.id.destination_text);
+        EditText pidtext = (EditText) findViewById(R.id.pid_text);
+        EditText amtext = (EditText) findViewById(R.id.amount_text);
+        try {
+            Intent intent = getIntent();
+            Uri openUri = intent.getData();
+            Log.d("asdf", "uri data:" + openUri.toString());
+            btcXmrUriParser btcXmrUri = new btcXmrUriParser(openUri.toString());
+            desttext.setText(btcXmrUri.dest);
+            pidtext.setText(btcXmrUri.pid);
+            amtext.setText(Double.toString(btcXmrUri.amount));
+        } catch (Exception noUriException) {
+            Log.d("asdf", "no uri passed");
+        }
     }
 
     @Override
