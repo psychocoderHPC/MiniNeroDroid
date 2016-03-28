@@ -4,15 +4,18 @@ package com.noether.shen.mininero;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.preference.EditTextPreference;
 import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
+import android.preference.SwitchPreference;
 import android.support.v7.app.ActionBar;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
@@ -21,6 +24,7 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.view.MenuItem;
 import android.support.v4.app.NavUtils;
+import android.widget.EditText;
 
 import java.util.List;
 
@@ -44,6 +48,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
         @Override
         public boolean onPreferenceChange(Preference preference, Object value) {
             String stringValue = value.toString();
+            Log.d("asdf", "settings key is:"+preference.getKey() );
 
             if (preference instanceof ListPreference) {
                 // For list preferences, look up the correct display value in
@@ -80,32 +85,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
                 }
 
             } else if (preference.getKey().contains("api_key")) {
-                //instead, have to store encrypted..
-                if (stringValue.length() == 128) {
-                    String password = "testPassword";
-                    ApiKeyStorage aks = new ApiKeyStorage(preference.getContext(), password);
-                    Log.d("asdf", "preference api key value bleh " + stringValue);
-                    aks.storeApiKey(stringValue);
-                    preference.setSummary("(stored encrypted)");
-                    Log.d("asdf", "encrypted key:" + TweetNaclFast.hexEncodeToString(aks.getApiKey()));
-                } else {
-                    Log.d("asdf", "wrong key lenght");
-                    preference.setSummary("wrong key length (must be 128 hex chars)");
-                    //show toast "wrong key length"
-                }
-            } else if (preference.getKey().contains("example_switch")) {
-                //clear api_key if off..
-                    Log.d("asdf", "boolean switch now:"+stringValue);
-                    if (stringValue.contains("ff")) {
-                        String password = "testPassword";
-                        ApiKeyStorage aks = new ApiKeyStorage(preference.getContext(), password);
-                        Log.d("asdf", "preference api key value bleh " + stringValue);
-                        aks.storeApiKey("none");
-                                        preference.setSummary(stringValue);
-                    } else {
-                        //probably need to save that..
-                                        preference.setSummary(stringValue);
-                    }
+
             } else {
                 // For all other preferences, set the summary to the value's
                 // simple string representation.
@@ -220,14 +200,77 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             // guidelines.
             bindPreferenceSummaryToValue(findPreference("mininodo_ip"));
 
-            bindPreferenceSummaryToValue(findPreference("api_key"));
-            //obviously don't put the summary there..
+            Preference ak = findPreference("api_key");
+            ak.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+                 @Override
+                 public boolean onPreferenceChange(Preference preference, Object value) {
+                     Log.d("asdf", "changing api key");
+                     String stringValue = value.toString();
+                     //instead, have to store encrypted..
+                     if (stringValue.length() == 128) {
+                         String password = "testPassword";
+                         ApiKeyStorage aks = new ApiKeyStorage(preference.getContext(), password);
+                         Log.d("asdf", "preference api key value bleh " + stringValue);
+                         aks.storeApiKey(stringValue);
+                         preference.setSummary("(stored encrypted)");
+                         Log.d("asdf", "encrypted key:" + TweetNaclFast.hexEncodeToString(aks.getApiKey()));
 
+                         SharedPreferences.Editor editor = preference.getEditor();
+                         editor.putString("api_key", "");
 
+                         //also toggle this switch
+                         editor.putBoolean("save_api_switch", true);
+                         editor.commit();
+                         SwitchPreference sas = (SwitchPreference)findPreference("save_api_switch");
+                         sas.setChecked(true);
+                     } else {
+                         //don't save it, since it's invalid..
+                         Log.d("asdf", "wrong key lenght");
+                         preference.setSummary("wrong key length (must be 128 hex chars) find key in MiniNodo on launch");
+                         EditTextPreference ak = (EditTextPreference) preference;
+                         ak.setText("");
+                         SharedPreferences.Editor editor = ak.getEditor();
+                         editor.putString("api_key", "");
+                         editor.commit();
+                         //show toast "wrong key length"
+                     }
+                     return true;
+                 }
+             });
+
+            Preference sas = findPreference("save_api_switch");
+            sas.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+                @Override
+                public boolean onPreferenceChange(Preference preference, Object value) {
+                    String stringVal = value.toString();
+                    Log.d("asdf", "switched toggled");
+                    String stringValue = value.toString();
+                    Log.d("asdf", "settings key is:" + preference.getKey());
+                    Log.d("asdf", "value is:"+stringValue);
+                    if (stringValue == "true") {
+
+                        return true;
+                    } else if (stringValue == "false") {
+
+                        //clear stored api key from everywhere..
+                        EditTextPreference ak = (EditTextPreference)findPreference("api_key");
+                        SharedPreferences.Editor editor = ak.getEditor();
+                        editor.putString("api_key", "");
+                        editor.commit();
+                        ak.setText("");
+                        String password = "testPassword";
+                        ApiKeyStorage aks = new ApiKeyStorage(preference.getContext(), password);
+                        Log.d("asdf", "preference api key value bleh " + stringValue);
+                        aks.storeApiKey("");
+                        return true;
+                    }
+                    return true;
+                }
+            });
         }
 
-        @Override
-        public boolean onOptionsItemSelected(MenuItem item) {
+            @Override
+            public boolean onOptionsItemSelected(MenuItem item) {
             int id = item.getItemId();
             if (id == android.R.id.home) {
                 startActivity(new Intent(getActivity(), SettingsActivity.class));

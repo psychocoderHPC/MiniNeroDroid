@@ -2,9 +2,10 @@
 
     <SwitchPreference
         android:defaultValue="true"
-        android:key="example_switch"
+        android:key="save_api_switch"
         android:summary="@string/pref_description_social_recommendations"
-        android:title="@string/pref_title_social_recommendations" />
+        android:title="@string/pref_title_social_recommendations"
+        />
 
     <!-- NOTE: EditTextPreference accepts EditText attributes. -->
     <!-- NOTE: EditTextPreference's summary should be set to its value by the activity code. -->
@@ -22,7 +23,8 @@
         android:key="api_key"
         android:title="@string/api_sk_title"
         android:summary="@string/api_sk_summary"
-        android:inputType="textPassword" />
+        android:inputType="textPassword"
+        />
 
     <!-- NOTE: Hide buttons to simplify the UI. Users can touch outside the dialog to
          dismiss it. -->
