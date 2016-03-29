@@ -1,8 +1,8 @@
 # MiniNeroDroid
-A convenience-oriented phone wallet for Android. 
+A convenience-oriented Monero phone wallet for Android. 
 
 This is currently functional, although a couple of features, which exist in the windows version, still have yet to be implemented.  
-If you want to beta test it, you can clone the repo and open it in Android Studio 1.5.1+
+If you want to beta test it, you can clone the repo and open it in Android Studio 1.5.1, just put your mininodo ip / key in the settings menu. (Requires MiniNodo.js to work: https://github.com/shennoether/mininodo )
 
 ####Features:####
 * Bitcoin / Xmr uri and qr scanning support
