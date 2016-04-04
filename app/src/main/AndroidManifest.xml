@@ -8,7 +8,7 @@
 
     <application
         android:allowBackup="true"
-        android:icon="@drawable/mn48x48"
+        android:icon="@drawable/mnicon"
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
@@ -23,24 +23,20 @@
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
+
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="bitcoin"/>
+
+                <data android:scheme="bitcoin" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
+
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="monero"/>
+
+                <data android:scheme="monero" />
             </intent-filter>
-        </activity>
-        <activity
-            android:name=".SettingsActivity"
-            android:label="@string/title_activity_settings"
-            android:parentActivityName=".MainActivity">
-            <meta-data
-                android:name="android.support.PARENT_ACTIVITY"
-                android:value="com.noether.shen.mininero.MainActivity" />
         </activity>
         <activity
             android:name=".AnyOrientationCaptureActivity"
@@ -48,9 +44,15 @@
             android:stateNotNeeded="true"
             android:theme="@style/zxing_CaptureTheme"
             android:windowSoftInputMode="stateAlwaysHidden" />
-        <activity android:name=".TxnActivity"></activity>
-
-
+        <activity android:name=".TxnActivity" />
+        <activity
+            android:name=".TabbedSettingsActivity"
+            android:label="@string/title_activity_tabbed_settings"
+            android:parentActivityName=".MainActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.noether.shen.mininero.MainActivity" />
+        </activity>
     </application>
 
 </manifest>

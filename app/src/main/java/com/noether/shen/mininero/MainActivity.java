@@ -15,6 +15,7 @@ import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v7.app.AppCompatDelegate;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
@@ -63,7 +64,8 @@ public class MainActivity extends AppCompatActivity
 
     SQLiteDatabase sql;
     Cursor c;
-    JsonRequester jreq;
+    //JsonRequester jreq;
+    ApiKeyStore aksnew;
 
     private void showToast(String message) {
         Toast toast = Toast.makeText(this, message, Toast.LENGTH_LONG);
@@ -74,11 +76,26 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
+        SharedPreferences SP  = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
+        String dnmode = SP.getString("dn_mode", "night");
+        if (dnmode.contains("night")) {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
+        } else {
+             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+        }
+
+
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        jreq = new JsonRequester(getApplicationContext());
+
+        aksnew = new ApiKeyStore(MainActivity.this);
+
+        //aks = new ApiKeyStorage(getApplicationContext(), "password?"); //shouldn't do it on first app load...
+        //jreq = new JsonRequester(getApplicationContext(), aks);
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -144,56 +161,72 @@ public class MainActivity extends AppCompatActivity
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            Intent settingIntent = new Intent(this, SettingsActivity.class);
-            startActivity(settingIntent);
-            return true;
-        }
-        if (id == R.id.action_addresses) {
-             try {
-                loadAddress();
-            } catch (Exception dberr) {
-                showToast("unknown sqlite db error for loading saved addresses");
+
+         //check if there is no api key stored!..
+        SharedPreferences SP = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
+        String encKey = SP.getString("api_key", "");
+        if (encKey == "" && (id != R.id.action_settings) && (id != R.id.action_addresses)) {
+            int duration = Toast.LENGTH_SHORT;
+            Toast toast = Toast.makeText(MainActivity.this, "Enter api key in settings menu!", duration);
+            toast.show();
+
+        } else {
+
+            if (id == R.id.action_settings) {
+                Intent settingIntent = new Intent(this, TabbedSettingsActivity.class);
+                startActivity(settingIntent);
+                return true;
             }
-        }
-        if (id == R.id.action_balance) {
-            Context context = getApplicationContext();
-            if (isNetworkConnected()) {
+            if (id == R.id.action_addresses) {
                 try {
-                    jreq.GetTime();
-                    jreq.GetBalance();
-                    //JsonRequestGetTime(); //this will be moved to app launch later, so the offset is preloaded
-                    //JsonRequestGetBalance();
-                } catch (Exception e) {
-                    Log.d("asdf", "is your server running");
+                    loadAddress();
+                } catch (Exception dberr) {
+                    showToast("unknown sqlite db error for loading saved addresses");
+                }
+            }
+            if (id == R.id.action_balance) {
+                Context context = getApplicationContext();
+                if (isNetworkConnected()) {
+                    try {
+                        aksnew.unlockBox(aksnew.AKSBALANCE, "unlock");
+                        Log.d("asdf", "here");
+                        //jreq.GetTime();
+                        //jreq.GetBalance();
+
+                        //JsonRequestGetTime(); //this will be moved to app launch later, so the offset is preloaded
+                        //JsonRequestGetBalance();
+                    } catch (Exception e) {
+                        Log.d("asdf", "is your server running");
+                        int duration = Toast.LENGTH_SHORT;
+                        Toast toast = Toast.makeText(context, "server ip error!", duration);
+                        toast.show();
+                    }
+                } else {
                     int duration = Toast.LENGTH_SHORT;
-                    Toast toast = Toast.makeText(context, "server ip error!", duration);
+                    Toast toast = Toast.makeText(context, "no network!", duration);
                     toast.show();
                 }
-            } else {
-                int duration = Toast.LENGTH_SHORT;
-                Toast toast = Toast.makeText(context, "no network!", duration);
-                toast.show();
             }
-                }
-        if (id == R.id.action_my_addr) {
-            try {
-                jreq.GetTime();
-                EditText desttext = (EditText) findViewById(R.id.destination_text);
-                jreq.GetAddress(desttext);
-                //JsonRequestGetAddress();
+            if (id == R.id.action_my_addr) {
+                try {
+                    //jreq.GetTime();
+                    EditText desttext = (EditText) findViewById(R.id.destination_text);
+                    aksnew.unlockBox(aksnew.AKSADDRESS, "unlock", desttext);
+                    //jreq.GetAddress(desttext);
+                    //JsonRequestGetAddress();
 
-            } catch (Exception addrexc) {
-                Log.d("asdf","error in getaddress");
+                } catch (Exception addrexc) {
+                    Log.d("asdf", "error in getaddress");
+                }
             }
-        }
-        if (id == R.id.action_account) {
-            //JsonRequestGetTransactions
-            //display in webview
-            //need to add decryption here also..
-            Intent transactionsIntent = new Intent(this, TxnActivity.class);
-            startActivity(transactionsIntent);
-            return true;
+            if (id == R.id.action_account) {
+                //JsonRequestGetTransactions
+                //display in webview
+                //need to add decryption here also..
+                Intent transactionsIntent = new Intent(this, TxnActivity.class);
+                startActivity(transactionsIntent);
+                return true;
+            }
         }
 
         return super.onOptionsItemSelected(item);
@@ -205,56 +238,64 @@ public class MainActivity extends AppCompatActivity
         // Handle navigation view item clicks here.
         int id = item.getItemId();
 
-        if (id == R.id.nav_manage) {
-             Intent settingIntent = new Intent(this, SettingsActivity.class);
-            startActivity(settingIntent);
-        }
-        if (id == R.id.nav_addresses) {
-//            Intent settingIntent = new Intent(this, ItemListActivity.class);
-            //startActivity(settingIntent);
+        //check if there is no api key stored!..
+        SharedPreferences SP = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
+        String encKey = SP.getString("api_key", "");
+        if (encKey == "" && (id != R.id.nav_manage) && (id != R.id.nav_addresses)) {
+            int duration = Toast.LENGTH_SHORT;
+            Toast toast = Toast.makeText(MainActivity.this, "Enter api key in settings menu!", duration);
+            toast.show();
 
-            try {
-                loadAddress();
-            } catch (Exception dberr) {
-                showToast("unknown sqlite db error for loading saved addresses");
+        } else {
+
+            if (id == R.id.nav_manage) {
+                Intent settingIntent = new Intent(this, TabbedSettingsActivity.class);
+                startActivity(settingIntent);
             }
-        }
-        if (id == R.id.nav_balance) {
-            Context context = getApplicationContext();
-            if (isNetworkConnected()) {
+            if (id == R.id.nav_addresses) {
+                //            Intent settingIntent = new Intent(this, ItemListActivity.class);
+                //startActivity(settingIntent);
+
                 try {
-                    jreq.GetTime(); //this will be moved to app launch later, so the offset is preloaded
-                    jreq.GetBalance();
-                } catch (Exception e) {
-                    Log.d("asdf", "is your server running");
+                    loadAddress();
+                } catch (Exception dberr) {
+                    showToast("unknown sqlite db error for loading saved addresses");
+                }
+            }
+            if (id == R.id.nav_balance) {
+                Context context = getApplicationContext();
+                if (isNetworkConnected()) {
+                    try {
+                        aksnew.unlockBox(aksnew.AKSBALANCE, "unlock");
+                    } catch (Exception e) {
+                        Log.d("asdf", "is your server running");
+                        int duration = Toast.LENGTH_SHORT;
+                        Toast toast = Toast.makeText(context, "server ip error!", duration);
+                        toast.show();
+                    }
+                } else {
                     int duration = Toast.LENGTH_SHORT;
-                    Toast toast = Toast.makeText(context, "server ip error!", duration);
+                    Toast toast = Toast.makeText(context, "no network!", duration);
                     toast.show();
                 }
-            } else {
-                int duration = Toast.LENGTH_SHORT;
-                Toast toast = Toast.makeText(context, "no network!", duration);
-                toast.show();
             }
+            if (id == R.id.nav_my_addr) {
+                try {
+                    EditText desttext = (EditText) findViewById(R.id.destination_text);
+                    aksnew.unlockBox(aksnew.AKSADDRESS, "unlock", desttext);
+                } catch (Exception errr) {
+                    Log.d("asdf", "didn't get address");
                 }
-        if (id == R.id.nav_my_addr) {
-            try {
-                jreq.GetTime();
-                EditText desttext = (EditText) findViewById(R.id.destination_text);
-                jreq.GetAddress(desttext);
-            } catch (Exception errr){
-                Log.d("asdf","didn't get address");
+            }
+            if (id == R.id.nav_account) {
+                //JsonRequestGetTransactions
+                //display in webview
+                //need to add decryption here also..
+                Intent transactionsIntent = new Intent(this, TxnActivity.class);
+                startActivity(transactionsIntent);
+                return true;
             }
         }
-        if (id == R.id.nav_account) {
-            //JsonRequestGetTransactions
-            //display in webview
-            //need to add decryption here also..
-            Intent transactionsIntent = new Intent(this, TxnActivity.class);
-            startActivity(transactionsIntent);
-            return true;
-        }
-
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
@@ -272,7 +313,7 @@ public class MainActivity extends AppCompatActivity
             );
         } catch (Exception dberr) {
             Log.d("asdf", "unknown db error");
-            showToast("unknown android sqlite error - unable to store or load addresses locally");
+            //showToast("unknown android sqlite error - unable to store or load addresses locally");
         }
     }
 
@@ -472,24 +513,68 @@ public class MainActivity extends AppCompatActivity
 
     public void sendButtonClick(View view) {
         //needs to parse whether it's an xmr address or bitcoin first
-        try {
-            jreq.GetTime();
-            EditText desttext = (EditText) findViewById(R.id.destination_text);
-            EditText amtext = (EditText) findViewById(R.id.amount_text);
-            EditText pidtext = (EditText) findViewById(R.id.pid_text);
-            String dest = desttext.getText().toString();
-            String amount = amtext.getText().toString();
-            amtext.setText(""); //set amount to zero, so don't accidentally resend..
-            String pid = pidtext.getText().toString();
-            if (dest.length() < 40) {
-                jreq.SendBtc(dest, amount);
-            } else {
-                jreq.SendXMR(dest, pid, amount);
+         //check if there is no api key stored!..
+        SharedPreferences SP = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
+        String encKey = SP.getString("api_key", "");
+        if (encKey == "") {
+            int duration = Toast.LENGTH_SHORT;
+            Toast toast = Toast.makeText(MainActivity.this, "Enter api key in settings menu!", duration);
+            toast.show();
 
+        } else {
+            try {
+                //jreq.GetTime();
+                EditText desttext = (EditText) findViewById(R.id.destination_text);
+                EditText amtext = (EditText) findViewById(R.id.amount_text);
+                EditText pidtext = (EditText) findViewById(R.id.pid_text);
+                aksnew.jreq.dest = desttext.getText().toString();
+                aksnew.jreq.amount = amtext.getText().toString();
+                amtext.setText(""); //set amount to zero, so don't accidentally resend..
+                aksnew.jreq.pid = pidtext.getText().toString();
+
+                String type = "xmr";
+                if (aksnew.jreq.dest.length() < 40) {
+                    type = "bitcoin";
+                }
+
+                //confirm dialog...
+                AlertDialog alertDialog = new AlertDialog.Builder(MainActivity.this).create();
+                alertDialog.setTitle("Confirm");
+                alertDialog.setMessage("Do you want to send " + aksnew.jreq.amount + " " + type + "?");
+                alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, "Ok", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        if (aksnew.jreq.dest.length() < 40) {
+                            aksnew.unlockBox(aksnew.AKSSENDBTC, "unlock");
+                        } else {
+                            aksnew.unlockBox(aksnew.AKSSENDXMR, "unlock");
+                        }
+                    }
+                });
+                alertDialog.setButton(AlertDialog.BUTTON_NEGATIVE, "Cancel", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        Log.d("asdf", "cancelled!");
+                    }
+                });
+                alertDialog.show();
+
+            } catch (Exception sendEx) {
+                showToast("error in sending!");
+                Log.d("asdf", "problem in send");
             }
-        } catch (Exception sendEx) {
-            showToast("error in sending!");
-            Log.d("asdf", "problem in send");
+        }
+    }
+
+    //method for resume, should again query for password...
+    @Override
+    public void onResume(){
+        super.onResume();
+        //reset the aksnew..
+        aksnew = new ApiKeyStore(MainActivity.this);
+        JsonRequester jreqt = new JsonRequester(MainActivity.this);
+        try {
+            jreqt.GetTime();
+        } catch (Exception e) {
+            Log.d("asdf","no network");
         }
     }
 }
