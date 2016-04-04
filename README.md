@@ -21,7 +21,7 @@ This app requires MiniNodo server running on the same box as your Monero install
 https://github.com/ShenNoether/MiniNodo
 
 ####Screenshots:####
-http://imgur.com/a/xODgl
+http://imgur.com/a/h5FuV
 
 This should eventually be feature equivalent to the existing windows universal app version:
 
