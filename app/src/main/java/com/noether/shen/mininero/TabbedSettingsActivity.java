@@ -1,19 +1,14 @@
 package com.noether.shen.mininero;
 
 
-import android.app.Activity;
-import android.app.ActionBar;
-import android.app.FragmentTransaction;
-
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v13.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
-import android.os.Bundle;
-import android.support.v7.app.ActionBarActivity;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -21,13 +16,9 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-
 import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.Switch;
-import android.widget.TextView;
-import android.widget.Toast;
-import android.widget.Toolbar;
 
 public class TabbedSettingsActivity extends AppCompatActivity{
 
@@ -67,6 +58,12 @@ public class TabbedSettingsActivity extends AppCompatActivity{
         setContentView(R.layout.tabbed_settings_one);
         Switch dn = (Switch)findViewById(R.id.daynightswitch);
                 Log.d("asdf", "a3");
+        String ip = SP.getString("mininodo_ip", "https://localhost:3000");
+        String apikeyEnc = SP.getString("api_key", "");
+        EditText ipbox = (EditText) findViewById(R.id.iptext);
+        ipbox.setText(ip);
+        EditText apibox = (EditText) findViewById(R.id.apikeytext);
+        apibox.setText(apikeyEnc);
 
         if (dn!= null) {
             if (dnmode.contains("night")) {

@@ -1,6 +1,6 @@
 package com.noether.shen.mininero;
+
 import android.app.AlertDialog;
-import android.app.Dialog;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -11,53 +11,30 @@ import android.database.sqlite.SQLiteDatabase;
 import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
-import android.support.v7.app.AppCompatDelegate;
-import android.util.Log;
-import android.view.Gravity;
-import android.view.View;
 import android.support.design.widget.NavigationView;
+import android.support.design.widget.Snackbar;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.app.AppCompatDelegate;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.ArrayAdapter;
+import android.view.View;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
 
-
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 
-import org.json.JSONObject;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.io.UnsupportedEncodingException;
-import java.lang.reflect.Array;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.security.Key;
 import java.util.ArrayList;
 import java.util.List;
-
-import org.json.*; //json response handler
-import com.loopj.android.http.*;
-
-import cz.msebera.android.httpclient.Header; //gets pulled in with the loopj stuff
-
-import com.noether.shen.mininero.TweetNaclFast.*;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
@@ -532,20 +509,21 @@ public class MainActivity extends AppCompatActivity
                 amtext.setText(""); //set amount to zero, so don't accidentally resend..
                 aksnew.jreq.pid = pidtext.getText().toString();
 
-                String type = "xmr";
+                String typec = "xmr";
                 if (aksnew.jreq.dest.length() < 40) {
-                    type = "bitcoin";
+                    typec = "bitcoin";
                 }
 
                 //confirm dialog...
                 AlertDialog alertDialog = new AlertDialog.Builder(MainActivity.this).create();
                 alertDialog.setTitle("Confirm");
-                alertDialog.setMessage("Do you want to send " + aksnew.jreq.amount + " " + type + "?");
+                alertDialog.setMessage("Do you want to send " + aksnew.jreq.amount + " " + typec + "?");
+                final String typef = typec;
                 alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, "Ok", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int which) {
-                        if (aksnew.jreq.dest.length() < 40) {
+                        if (typef == "bitcoin") {
                             aksnew.unlockBox(aksnew.AKSSENDBTC, "unlock");
-                        } else {
+                        } else if (typef == "xmr") {
                             aksnew.unlockBox(aksnew.AKSSENDXMR, "unlock");
                         }
                     }

@@ -8,7 +8,6 @@ import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.EditText;
 
-import java.awt.font.TextAttribute;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 
@@ -172,6 +171,7 @@ public class ApiKeyStore {
                                 break;
                             case AKSCLEAR:
                                 clearApiKey();
+                                break;
                                 //clear api key.
                             case AKSTXNS:
                                 try {
@@ -179,10 +179,17 @@ public class ApiKeyStore {
                                 } catch (Exception e) {
                                     Log.d("asdf","txn view exception");
                                 }
+                                break;
+
                             case AKSSENDBTC:
+                                Log.d("asdf", "sending btc");
                                 jreq.SendBtc();
+                                break;
+
                             case AKSSENDXMR:
+                                Log.d("asdf", "sending xmr");
                                 jreq.SendXMR();
+                                break;
 
                         }
 
@@ -250,10 +257,15 @@ public class ApiKeyStore {
                         } catch (Exception e){
                             Log.d("asdf", "txn exception");
                         }
+                        break;
+
                     case AKSSENDBTC:
                         jreq.SendBtc();
+                        break;
+
                     case AKSSENDXMR:
                         jreq.SendXMR();
+                        break;
                     } //endswitch
             } catch (Exception e) {
                 Log.d("asdf","error in json requester");
