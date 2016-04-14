@@ -94,7 +94,7 @@ public class ApiKeyStore {
 
     }
 
-    public void changeQueryString(String qString)  {
+    public void changeQueryString(String qString) {
         unlockString = qString;
     }
 
@@ -147,7 +147,8 @@ public class ApiKeyStore {
                         Log.d("asdf", "got secret box");
                         isunlocked = true;
 
-                        //do action
+                        //Json requester can use the api_key store to authenticate and encrypt things
+                        //While making requests to the server.
 
                         jreq.decKey = decApiKey(paramString); //note, this has no async
                         jreq.seed = getSpecialSeed(decKey); //for encryption
@@ -172,12 +173,12 @@ public class ApiKeyStore {
                             case AKSCLEAR:
                                 clearApiKey();
                                 break;
-                                //clear api key.
+                            //clear api key.
                             case AKSTXNS:
                                 try {
                                     jreq.GetTxns();
                                 } catch (Exception e) {
-                                    Log.d("asdf","txn view exception");
+                                    Log.d("asdf", "txn view exception");
                                 }
                                 break;
 
@@ -220,20 +221,17 @@ public class ApiKeyStore {
             Log.d("asdf", "a6");
         } else {
             //already unlocked , i.e. mnBox created already...
-            //do action
+            //Use api key store to make an encrypted / authenticated json request
             Log.d("asdf", "already unlocked!");
             try {
                 jreq.decKey = decApiKey(paramString); //note, this has no async
                 jreq.seed = getSpecialSeed(decKey); //for encryption
                 switch (unlockaction) {
                     case AKSGETKEY:
-                        //Don't think I'm using for anything now..
+                        //Not necessary for end user
                         //lock
                         break;
                     case AKSSTORE:
-                        //store
-                        //decKey = decApiKey(paramString);
-                        //I think, should already have it...
                         storeApiKey(decKey);
                         break;
                     case AKSBALANCE:
@@ -252,9 +250,10 @@ public class ApiKeyStore {
                         //clear api key
                         clearApiKey();
                     case AKSTXNS:
+                        //Get transactions as a web view
                         try {
                             jreq.GetTxns();
-                        } catch (Exception e){
+                        } catch (Exception e) {
                             Log.d("asdf", "txn exception");
                         }
                         break;
@@ -266,9 +265,9 @@ public class ApiKeyStore {
                     case AKSSENDXMR:
                         jreq.SendXMR();
                         break;
-                    } //endswitch
+                } //endswitch
             } catch (Exception e) {
-                Log.d("asdf","error in json requester");
+                Log.d("asdf", "error in json requester");
                 isunlocked = false;
             }
         }
@@ -280,41 +279,34 @@ public class ApiKeyStore {
     //
     public byte[] decApiKey(String paramString) {
         //do unlock
-        if (paramString.length() != 128) { //already decrypted..
-            //the following code after unlock.. (probably in the callback...)
+        //When the key is encrypted, it's length is padded past 128
+        if (paramString.length() != 128) {
             byte[] encKey;
             encKey = TweetNaclFast.hexDecode(SP.getString("api_key", ""));
-
-            //this is just the nonce...
-            Log.d("asdf", "recovered encKey" + TweetNaclFast.hexEncodeToString(encKey));
             try {
-                //decKey = XSalsa20Poly1305.TryDecrypt(encKey, seed, nonce);
                 decKey = mnBox.open(encKey, nonce);
-                Log.d("asdf", "recovered decKey in func" + TweetNaclFast.hexEncodeToString(decKey));
             } catch (Exception e) {
                 isunlocked = false; //wrong pass I guess.
             }
         } else {
-            Log.d("asdf", "Already decrypted");
             decKey = TweetNaclFast.hexDecode(paramString);
         }
         return decKey;
     }
 
-    //get 32 byte thing
+    //get 32 byte seed
     public byte[] getSeed() {
         byte[] seedrv = new byte[32];
-        //unlock box
 
         byte[] encKey;
         encKey = TweetNaclFast.hexDecode(SP.getString("api_key", ""));
         try {
             decKey = mnBox.open(encKey, nonce);
-            //cut to the actual seed
 
         } catch (Exception e) {
             isunlocked = false;
         }
+        //cut to first 32 bytes, which is the seed.
         for (int i = 0; i < 32; i++) {
             seedrv[i] = decKey[i];
         }
@@ -326,43 +318,29 @@ public class ApiKeyStore {
 
         //unlock box
         AlertDialog.Builder alert = new AlertDialog.Builder(context);
-        Log.d("asdf", "a1");
         final EditText edittext = new EditText(context);
-        Log.d("asdf", "a2");
         alert.setTitle("New password?");
-        Log.d("asdf", "a3");
         alert.setView(edittext);
-        Log.d("asdf", "a4");
         alert.setPositiveButton("OK", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 String password = edittext.getText().toString();
 
-                //note that all the other vars (except password and after) should already exist by the unlock
-                //actually, they may not if you are storing a new password!
                 byte[] messageBytes = (password + salt).getBytes(StandardCharsets.UTF_8);
-                Log.d("asdf", "trying to hash the following as password..:" + password + salt);
-                Log.d("asdf", password + salt);
 
                 //
                 //get actual api key decrypted
                 //
                 try {
                     byte[] seedp = TweetNaclFast.Hash.sha512(messageBytes); // TweetNaclFast.Hash.sha512(salt + password); //returns 64 bytes
-                    Log.d("asdf", "did hash");
                     seed = randomBytes(32);
                     for (int i = 0; i < 32; i++) {
                         seed[i] = seedp[i];
                     }
-                    Log.d("asdf", "got seed");
                     mnBox = new TweetNaclFast.SecretBox(seed);
-                    Log.d("asdf", "got secret box");
                     isunlocked = true;
 
-                    //decKey = TweetNaclFast.hexDecode(apikey);
-                    //Log.d("asdf","decKey before store:"+apikey);
                     byte[] encKey = mnBox.box(decKey, nonce);
-                    Log.d("asdf", "encKey before store:" + TweetNaclFast.hexEncodeToString(encKey));
                     SharedPreferences.Editor editor = SP.edit();
                     editor.putString("api_key", TweetNaclFast.hexEncodeToString(encKey));
                     editor.commit();
@@ -375,17 +353,13 @@ public class ApiKeyStore {
     }
 
     public void clearApiKey() {
-        //unlock box
         try {
-            //decKey = TweetNaclFast.hexDecode(apikey);
-            //Log.d("asdf","decKey before store:"+apikey);
             SharedPreferences.Editor editor = SP.edit();
             editor.putString("api_key", "");
             editor.commit();
         } catch (Exception e) {
             Log.d("asdf", "error in clear api key");
         }
-
     }
 
     //for use in "Generate Encrypted"
@@ -397,8 +371,8 @@ public class ApiKeyStore {
     //and is used for encryption
     private byte[] getSpecialSeed(byte[] dk) {
         byte[] seed = randomBytes(32);
-        //copy first 32 bytes to there...
-        for (int i = 0 ; i < 32 ; i++) {
+        //copy first 32 bytes
+        for (int i = 0; i < 32; i++) {
             seed[i] = dk[i + 32];
         }
         return seed;

@@ -12,9 +12,10 @@ import cz.msebera.android.httpclient.client.utils.URLEncodedUtils;
 
 /**
  * Created by shen on 3/28/2016.
+ * Parses string from qr code
  */
 public class btcXmrUriParser {
-    public String amount= "0.0";
+    public String amount = "0.0";
     public String dest = "";
     public String pid = "";
 
@@ -23,18 +24,14 @@ public class btcXmrUriParser {
         pid = "";
         dest = "";
         if (tmp.contains("bitcoin:")) {
-            Log.d("asdf", "index " + tmp.indexOf("bitcoin:") + 8);
             tmp = tmp.substring(tmp.indexOf("bitcoin:") + 8); //get stuff after bitcoin: if it's there
         } else if (tmp.contains("monero:")) {
-            Log.d("asdf", "parsing btc address");
             tmp = tmp.substring(tmp.indexOf("monero:") + 7); //get stuff after monero: if it's there
         }
         if (tmp.contains("?")) {
             dest = tmp.substring(0, tmp.indexOf("?"));
             List<NameValuePair> decoder = URLEncodedUtils.parse(tmp, StandardCharsets.UTF_8);
             for (NameValuePair p : decoder) {
-                Log.d("asdf", "name:" + p.getName());
-                Log.d("asdf", "value:" + p.getValue());
                 if (p.getName().contains("amount")) {
                     amount = p.getValue();
                 }
@@ -45,11 +42,5 @@ public class btcXmrUriParser {
         } else {
             dest = tmp;
         }
-
-            //if there are more parameters..
-            //if (tmp.contains("?"))
-            //{
-                //String tmp2 = tmp.substring(tmp.indexOf("?") + 1); //stuff after first ?
-            //}
     }
 }
