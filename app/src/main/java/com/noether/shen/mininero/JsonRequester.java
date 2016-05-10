@@ -1,11 +1,16 @@
 package com.noether.shen.mininero;
 
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.SharedPreferences;
+import android.net.http.SslError;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.util.Xml;
+import android.webkit.SslErrorHandler;
 import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -24,6 +29,7 @@ import java.util.List;
 import cz.msebera.android.httpclient.Header;
 import cz.msebera.android.httpclient.NameValuePair;
 import cz.msebera.android.httpclient.client.utils.URLEncodedUtils;
+import cz.msebera.android.httpclient.util.EncodingUtils;
 
 /**
  * Created by shen on 3/27/2016.
@@ -408,10 +414,10 @@ public class JsonRequester {
             public void onFailure(int statusCode, Header[] headers, String errorResponse, Throwable eee) {
                 errorResponse = GenerateDecrypted(errorResponse);
                 Log.d("asdf", "it may not be an error (should return dummy address on success on the test server:" + errorResponse);
-                    //actually not an error...
-                    int duration = Toast.LENGTH_SHORT;
-                    Toast toast = Toast.makeText(JContext, errorResponse, duration);
-                    toast.show();
+                //actually not an error...
+                int duration = Toast.LENGTH_SHORT;
+                Toast toast = Toast.makeText(JContext, errorResponse, duration);
+                toast.show();
             }
         });
     }
@@ -432,10 +438,20 @@ public class JsonRequester {
         String message = "mininerotxnwebview" + timestamp;
         String signature = GenerateSignature(message);
         RequestParams params = new RequestParams();
+        params.put("Type", "mininerotxnwebview");
         params.put("timestamp", timestamp);
         params.put("signature", signature);
+        params = GenerateEncrypted(params);
+        String postData = params.toString();
+        //String postData = "username=my_username&password=my_password";
 
-        mnc.post("/web/mininero/", GenerateEncrypted(params), new JsonHttpResponseHandler() {
+
+        //replace with cert auto-handler later..
+        wv.setWebViewClient(new WebViewClient() { @Override public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error){ handler.proceed(); } });
+        wv.postUrl(mnip + "/mininero", EncodingUtils.getBytes(postData, "BASE64"));
+
+        /*
+        mnc.post("/mininero", GenerateEncrypted(params), new JsonHttpResponseHandler() {
             public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
                 // If the response is JSONObject instead of expected JSONArray
                 Log.d("asdf", "success1");
@@ -464,7 +480,7 @@ public class JsonRequester {
                 wv.loadData(errorResponse, "text/html", "UTF-8");
             }
         });
+        */
     }
-
 
 }

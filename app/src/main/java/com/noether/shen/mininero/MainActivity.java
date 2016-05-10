@@ -419,14 +419,47 @@ public class MainActivity extends AppCompatActivity
                 String openUri = scanResult.getContents().toString();
 
                 btcXmrUriParser btcXmrUri = new btcXmrUriParser(openUri.toString());
-                desttext.setText(btcXmrUri.dest);
-                pidtext.setText(btcXmrUri.pid);
-                amtext.setText(btcXmrUri.amount);
-                Log.d("asdf", "amount in scan:"+btcXmrUri.amount);
+                if(btcXmrUri.isApiKey) {
 
 
-                Context context = getApplicationContext();
-                showToast("found address:"+openUri.toString());
+                        //ask if you want to set api key..
+                        //confirm dialog...
+                        AlertDialog alertDialog = new AlertDialog.Builder(MainActivity.this).create();
+                        alertDialog.setTitle("Confirm");
+                        alertDialog.setMessage("Do you want to set the api key/ip to scanned value? " + btcXmrUri.dest);
+                        final String apikey = btcXmrUri.dest;
+                        final String ip = btcXmrUri.ip;
+                        alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, "Ok", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int which) {
+
+                                //set ip
+                                SharedPreferences SP = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
+                                SharedPreferences.Editor editor = SP.edit();
+                                editor.putString("mininodo_ip", ip);
+                                editor.commit();
+
+                                //set apikey
+
+                                ApiKeyStore aksnew = new ApiKeyStore("New Password?", MainActivity.this);
+                                aksnew.storeApiKey(TweetNaclFast.hexDecode(apikey));
+                            }
+                        });
+                        alertDialog.setButton(AlertDialog.BUTTON_NEGATIVE, "Cancel", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int which) {
+                                Log.d("asdf", "cancelled!");
+                            }
+                        });
+                        alertDialog.show();
+
+                } else {
+                    Log.d("asdf", "amount in scan:" + btcXmrUri.amount);
+                    desttext.setText(btcXmrUri.dest);
+                    pidtext.setText(btcXmrUri.pid);
+                    amtext.setText(btcXmrUri.amount);
+
+                    Context context = getApplicationContext();
+                    showToast("found address:" + openUri.toString());
+                }
 
             } else {
                 showToast("bad uri!");

@@ -18,28 +18,52 @@ public class btcXmrUriParser {
     public String amount = "0.0";
     public String dest = "";
     public String pid = "";
+    public String ip = "";
+   // public String apikey = "";
+    public boolean isApiKey = false;
 
     public btcXmrUriParser(String tmp) {
         amount = "0.0";
         pid = "";
         dest = "";
+
+        Log.d("asdf", tmp);
+
         if (tmp.contains("bitcoin:")) {
             tmp = tmp.substring(tmp.indexOf("bitcoin:") + 8); //get stuff after bitcoin: if it's there
         } else if (tmp.contains("monero:")) {
             tmp = tmp.substring(tmp.indexOf("monero:") + 7); //get stuff after monero: if it's there
+        } else if (tmp.contains("apikey:")) {
+            tmp = tmp.substring(tmp.indexOf("apikey:") + 7); //get stuff after apilink...
+
+            isApiKey = true;
         }
         if (tmp.contains("?")) {
+
             dest = tmp.substring(0, tmp.indexOf("?"));
-            List<NameValuePair> decoder = URLEncodedUtils.parse(tmp, StandardCharsets.UTF_8);
-            for (NameValuePair p : decoder) {
-                if (p.getName().contains("amount")) {
-                    amount = p.getValue();
-                }
-                if (p.getName().contains("tx_payment_id")) {
-                    pid = p.getValue();
+            if (isApiKey) {
+                ip = tmp.substring(tmp.indexOf("ip:")+3);
+            } else {
+
+                List<NameValuePair> decoder = URLEncodedUtils.parse(tmp, StandardCharsets.UTF_8);
+
+                for (NameValuePair p : decoder) {
+
+                    if (p.getName().contains("amount")) {
+                        amount = p.getValue();
+                    }
+
+                    if (p.getName().contains("tx_payment_id")) {
+                        pid = p.getValue();
+                    }
+                    if (p.getName().contains("ip")) {
+                        ip = p.getValue();
+
+                    }
                 }
             }
         } else {
+
             dest = tmp;
         }
     }
