@@ -18,15 +18,21 @@ public class btcXmrUriParser {
     public String amount = "0.0";
     public String dest = "";
     public String pid = "";
+    public String ip = "";
 
     public btcXmrUriParser(String tmp) {
         amount = "0.0";
         pid = "";
         dest = "";
+        boolean isApiKey = false;
+
         if (tmp.contains("bitcoin:")) {
             tmp = tmp.substring(tmp.indexOf("bitcoin:") + 8); //get stuff after bitcoin: if it's there
         } else if (tmp.contains("monero:")) {
             tmp = tmp.substring(tmp.indexOf("monero:") + 7); //get stuff after monero: if it's there
+        } else if (tmp.contains("apilink:")) {
+            tmp = tmp.substring(tmp.indexOf("apilink:")+8); //get stuff after apilink...
+            isApiKey = true;
         }
         if (tmp.contains("?")) {
             dest = tmp.substring(0, tmp.indexOf("?"));
@@ -37,6 +43,8 @@ public class btcXmrUriParser {
                 }
                 if (p.getName().contains("tx_payment_id")) {
                     pid = p.getValue();
+                } if (p.getName().contains("ip")) {
+                    ip = p.getValue();
                 }
             }
         } else {
