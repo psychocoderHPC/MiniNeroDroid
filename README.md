@@ -1,4 +1,7 @@
 # MiniNeroDroid
+
+For suggestions / to help with development, join the new team board at: https://trello.com/minineroappsdevelopment 
+
 A convenience-oriented Monero phone wallet for Android. 
 
 This is currently (almost) fully functional and feature equivalent to the windows version -( I actually broke the transactions view when I updated the web app, so I need to go back and fix that soon).
